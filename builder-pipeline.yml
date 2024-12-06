@@ -7,3 +7,5 @@ steps:
             GITHUB_TOKEN: GITHUB_TOKEN
   - wait
   - trigger: "cluster-b-base-image-builder"
+  - wait
+  - command: "./scripts/update-cluster-queue.sh"
