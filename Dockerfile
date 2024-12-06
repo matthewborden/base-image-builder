@@ -17,7 +17,7 @@ RUN --mount=type=secret,id=github_token \
 # Clone a GitHub repository or download specific assets
 ARG REPO="matthewborden/test"
 ARG RELEASE_ASSET="cache"
-RUN gh release download --repo $REPO --pattern $RELEASE_ASSET && \
+RUN gh release download --repo $REPO $RELEASE_ASSET && \
     unzip $RELEASE_ASSET -d /usr/local/bin && \
     chmod +x /usr/local/bin/cache
 
