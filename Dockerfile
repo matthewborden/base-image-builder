@@ -13,7 +13,6 @@ RUN gh --version
 # Authenticate using a token passed as a secret
 RUN --mount=type=secret,id=github_token \
     gh auth login --with-token < /run/secrets/github_token
-RUN echo /run/secrets/github_token | gh auth login --with-token
 
 # Clone a GitHub repository or download specific assets
 ARG REPO="matthewborden/test"
