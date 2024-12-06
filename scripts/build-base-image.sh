@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 export GITHUB_TOKEN=$(buildkite-agent secret get GITHUB_TOKEN)
 REGISTRY="$(nsc workspace describe -o json -k registry_url)"
