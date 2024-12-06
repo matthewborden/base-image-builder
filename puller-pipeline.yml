@@ -1,0 +1,2 @@
+steps:
+  - command: "./scripts/download-and-push.sh"

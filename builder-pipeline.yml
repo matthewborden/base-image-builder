@@ -1,0 +1,8 @@
+steps:
+  - label: "Build Base Image"
+    command: "./scripts/build-base-image.sh"
+    plugins:
+      - cluster-secrets#v1.0.0:
+          variables:
+            GITHUB_TOKEN: GITHUB_TOKEN
+  - trigger: "cluster-b-base-image-build"
