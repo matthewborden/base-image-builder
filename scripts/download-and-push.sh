@@ -10,4 +10,4 @@ SOURCE_IMAGE_NAME=$(docker load -i base-image.tar | awk '/Loaded image:/ {print 
 
 docker tag $SOURCE_IMAGE_NAME $TARGET_IMAGE_NAME
 
-docker push "$IMAGE_NAME"
+docker push "$TARGET_IMAGE_NAME"
