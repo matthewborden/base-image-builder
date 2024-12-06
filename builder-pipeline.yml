@@ -5,4 +5,5 @@ steps:
       - cluster-secrets#v1.0.0:
           variables:
             GITHUB_TOKEN: GITHUB_TOKEN
-  - trigger: "cluster-b-base-image-build"
+  - wait
+  - trigger: "cluster-b-base-image-builder"
