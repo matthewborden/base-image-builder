@@ -9,3 +9,7 @@ steps:
   - trigger: "cluster-b-base-image-builder"
   - wait
   - command: "./scripts/update-cluster-queue.sh"
+    plugins:
+      - cluster-secrets#v1.0.0:
+          variables:
+            BUILDKITE_API_ACCESS_TOKEN: BUILDKITE_API_ACCESS_TOKEN
