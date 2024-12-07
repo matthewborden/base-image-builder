@@ -12,4 +12,4 @@ steps:
     plugins:
       - cluster-secrets#v1.0.0:
           variables:
-            BUILDKITE_API_ACCESS_TOKEN: BUILDKITE_API_ACCESS_TOKEN
+            BUILDKITE_API_ACCESS_TOKEN: API_ACCESS_TOKEN_BK
