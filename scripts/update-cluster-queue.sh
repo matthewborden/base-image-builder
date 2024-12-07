@@ -3,9 +3,9 @@
 set -ex
 
 # GraphQL query to get the cluster queue
-QUERY='
+QUERY="
 query {
-  build(uuid: "$BUILDKITE_BUILD_ID") {
+  build(uuid: \"$BUILDKITE_BUILD_ID\") {
     jobs(first: 100, type: TRIGGER) {
       edges {
         node {
@@ -47,9 +47,9 @@ query {
     }
   }
 }
-'
+"
 
-QUERY_RESPONSE=$(curl -s -X POST -H "Content-Type: application /json" -H "Authorization: Bearer $BUILDKITE_API_ACCESS_TOKEN" -d "{\"query\": \"$QUERY\"}" https://graphql.buildkite.com/v1 | jq ".build.jobs" )
+QUERY_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $BUILDKITE_API_ACCESS_TOKEN" -d "{\"query\": \"$QUERY\"}" https://graphql.buildkite.com/v1 | jq ".build.jobs" )
 echo $QUERY_RESPONSE
 
 for i in $(echo $QUERY_RESPONSE | jq -r '.edges[].node.build.pipeline.cluster.queues.edges[].node'); do
@@ -59,6 +59,7 @@ for i in $(echo $QUERY_RESPONSE | jq -r '.edges[].node.build.pipeline.cluster.qu
   TARGET_IMAGE_NAME=$(echo $QUERY_RESPONSE | jq -r '.edges[].node.build.metaData.edges[].node | select(.key == "TARGET_IMAGE_NAME") | .value')
 
   CLUSTER_ID=$(echo $QUERY_RESPONSE | jq -r '.edges[].node.build.pipeline.cluster.id')
+  CLUSTER_QUEUE_ID=$(echo $i | jq -r '.id')
 
   # Update the cluster queue
 
@@ -85,5 +86,5 @@ for i in $(echo $QUERY_RESPONSE | jq -r '.edges[].node.build.pipeline.cluster.qu
           }
         }
       }
-    }
+    }'
 done
