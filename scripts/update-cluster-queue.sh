@@ -3,7 +3,7 @@
 set -ex
 
 QUERY_RESPONSE=$(curl -X POST \
-  -H "Authorization: Bearer <YOUR_API_TOKEN>" \
+  -H "Authorization: Bearer $BUILDKITE_API_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "{
