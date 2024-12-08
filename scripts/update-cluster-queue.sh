@@ -5,9 +5,9 @@ set -ex
 QUERY_RESPONSE=$(curl -X POST \
   -H "Authorization: Bearer $BUILDKITE_API_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{
-    "query": "{
-      build(uuid: \"$BUILDKITE_BUILD_ID\") {
+  -d "{
+    \"query\": \"{
+      build(uuid: \\\"$BUILDKITE_BUILD_ID\\\") {
         jobs(first: 100, type: TRIGGER) {
           edges {
             node {
@@ -50,10 +50,9 @@ QUERY_RESPONSE=$(curl -X POST \
           }
         }
       }
-    }"
-  }' \
-  https://graphql.buildkite.com/v1
-)
+    }\"
+  }" \
+  https://graphql.buildkite.com/v1)
 
 echo "${QUERY_RESPONSE}"
 
