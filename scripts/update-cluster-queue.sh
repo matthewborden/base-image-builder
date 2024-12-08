@@ -2,7 +2,7 @@
 
 set -ex
 
-QUERY_RESPONSE=(curl -X POST \
+QUERY_RESPONSE=$(curl -X POST \
   -H "Authorization: Bearer <YOUR_API_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
