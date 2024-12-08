@@ -2,29 +2,43 @@
 
 set -ex
 
-# GraphQL query to get the cluster queue
-QUERY="
-query {
-  build(uuid: \"$BUILDKITE_BUILD_ID\") {
-    jobs(first: 100, type: TRIGGER) {
-      edges {
-        node {
-          ... on JobTypeTrigger {
-            build {
-              uuid
-              pipeline {
-                name
-                cluster {
-                  id
-                  queues(first: 100) {
+QUERY_RESPONSE=(curl -X POST \
+  -H "Authorization: Bearer <YOUR_API_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "{
+      build(uuid: \"$BUILDKITE_BUILD_ID\") {
+        jobs(first: 100, type: TRIGGER) {
+          edges {
+            node {
+              ... on JobTypeTrigger {
+                triggered {
+                  uuid
+                  number
+                  url
+                  metaData(first: 100) {
                     edges {
                       node {
-                        id
-                        uuid
-                        hosted
-                        hostedAgentSettings {
-                          instanceShape {
-                            name
+                        key
+                        value
+                      }
+                    }
+                  }
+                  pipeline {
+                    name
+                    cluster {
+                      id
+                      queues(first: 100) {
+                        edges {
+                          node {
+                            id
+                            uuid
+                            hosted
+                            hostedAgentSettings {
+                              instanceShape {
+                                name
+                              }
+                            }
                           }
                         }
                       }
@@ -32,59 +46,25 @@ query {
                   }
                 }
               }
-              metaData(first: 100) {
-                edges {
-                  node {
-                    key
-                    value
-                  }
-                }
-              }
             }
           }
         }
       }
-    }
-  }
-}
-"
+    }"
+  }' \
+  https://graphql.buildkite.com/v1
+)
 
-QUERY_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $BUILDKITE_API_ACCESS_TOKEN" -d "{\"query\": \"$QUERY\"}" https://graphql.buildkite.com/v1 | jq ".build.jobs" )
-echo $QUERY_RESPONSE
+echo "${QUERY_RESPONSE}"
 
-for i in $(echo $QUERY_RESPONSE | jq -r '.edges[].node.build.pipeline.cluster.queues.edges[].node'); do
-  echo $i
+# For each trigger job extract the cluster id, queue ids and meta data from the triggered build in bash using only jq
 
-  # Get the target image name from the build meta-data in the graphQL response
-  TARGET_IMAGE_NAME=$(echo $QUERY_RESPONSE | jq -r '.edges[].node.build.metaData.edges[].node | select(.key == "TARGET_IMAGE_NAME") | .value')
-
-  CLUSTER_ID=$(echo $QUERY_RESPONSE | jq -r '.edges[].node.build.pipeline.cluster.id')
-  CLUSTER_QUEUE_ID=$(echo $i | jq -r '.id')
-
-  # Update the cluster queue
-
-  MUTATION='
-    mutation {
-      updateClusterQueue(input: {
-        clusterId: "$CLUSTER_ID",
-        key: "default",
-        baseImageRef: "$TARGET_IMAGE_NAME"
-      }) {
-        clusterQueue {
-          id
-          cluster {
-            name
-          }
-          queue {
-            key
-            hosted
-            hostedAgentSettings {
-              linux {
-                baseImageRef
-              }
-            }
-          }
-        }
-      }
-    }'
+# Extract the cluster id, queue ids and meta data from the triggered build in bash using only jq
+for job in $(echo "${QUERY_RESPONSE}" | jq -r '.data.build.jobs.edges[] | select(.node.triggered != null) | .node.triggered.uuid'); do
+  CLUSTER_ID=$(echo "${QUERY_RESPONSE}" | jq -r --arg job "$job" '.data.build.jobs.edges[] | select(.node.triggered.uuid == $job) | .node.pipeline.cluster.id')
+  QUEUE_IDS=$(echo "${QUERY_RESPONSE}" | jq -r --arg job "$job" '.data.build.jobs.edges[] | select(.node.triggered.uuid == $job) | .node.pipeline.cluster.queues.edges[].node.id')
+  META_DATA=$(echo "${QUERY_RESPONSE}" | jq -r --arg job "$job" '.data.build.jobs.edges[] | select(.node.triggered.uuid == $job) | .node.metaData.edges[] | "\(.node.key)=\(.node.value)"')
+  echo "Cluster ID: $CLUSTER_ID"
+  echo "Queue IDs: $QUEUE_IDS"
+  echo "Meta Data: $META_DATA"
 done
