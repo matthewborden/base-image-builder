@@ -5,65 +5,26 @@ set -ex
 QUERY_RESPONSE=$(curl -X POST \
   -H "Authorization: Bearer $BUILDKITE_API_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  -d "{
-    \"query\": \"{
-      build(uuid: \\\"$BUILDKITE_BUILD_ID\\\") {
-        jobs(first: 100, type: TRIGGER) {
-          edges {
-            node {
-              ... on JobTypeTrigger {
-                triggered {
-                  uuid
-                  number
-                  url
-                  metaData(first: 100) {
-                    edges {
-                      node {
-                        key
-                        value
-                      }
-                    }
-                  }
-                  pipeline {
-                    name
-                    cluster {
-                      id
-                      queues(first: 100) {
-                        edges {
-                          node {
-                            id
-                            uuid
-                            hosted
-                            hostedAgentSettings {
-                              instanceShape {
-                                name
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }\"
-  }" \
+  -d '{
+    "query": "query($build_id: ID!) { build(uuid: $build_id) { jobs(first: 100, type: TRIGGER) { edges { node { ... on JobTypeTrigger { triggered { pipeline { uuid, organization { id } cluster { id queues(first: 100) { edges { node { hosted, key, id } } } }  } uuid number url metaData(first: 100) { edges { node { key value } } } }  }  } } } } }",
+    "variables": { "build_id": "'"$BUILDKITE_BUILD_ID"'" }
+  }'\
   https://graphql.buildkite.com/v1)
 
-echo "${QUERY_RESPONSE}"
+ORGANIZATION_ID=$(echo $QUERY_RESPONSE | jq -r '.data.build.jobs.edges[0].node.triggered.pipeline.organization.id')
+CLUSTER_ID=$(echo $QUERY_RESPONSE | jq -r '.data.build.jobs.edges[0].node.triggered.pipeline.cluster.id')
+CLUSTER_QUEUES=$(echo $QUERY_RESPONSE | jq -r '.data.build.jobs.edges[0].node.triggered.pipeline.cluster.queues.edges[].node.id')
+BASE_IMAGE=$(echo $QUERY_RESPONSE | jq -r '.data.build.jobs.edges[0].node.triggered.metaData.edges[] | select(.node.key == "TARGET_IMAGE_NAME") | .node.value')
 
-# For each trigger job extract the cluster id, queue ids and meta data from the triggered build in bash using only jq
-
-# Extract the cluster id, queue ids and meta data from the triggered build in bash using only jq
-for job in $(echo "${QUERY_RESPONSE}" | jq -r '.data.build.jobs.edges[] | select(.node.triggered != null) | .node.triggered.uuid'); do
-  CLUSTER_ID=$(echo "${QUERY_RESPONSE}" | jq -r --arg job "$job" '.data.build.jobs.edges[] | select(.node.triggered.uuid == $job) | .node.pipeline.cluster.id')
-  QUEUE_IDS=$(echo "${QUERY_RESPONSE}" | jq -r --arg job "$job" '.data.build.jobs.edges[] | select(.node.triggered.uuid == $job) | .node.pipeline.cluster.queues.edges[].node.id')
-  META_DATA=$(echo "${QUERY_RESPONSE}" | jq -r --arg job "$job" '.data.build.jobs.edges[] | select(.node.triggered.uuid == $job) | .node.metaData.edges[] | "\(.node.key)=\(.node.value)"')
-  echo "Cluster ID: $CLUSTER_ID"
-  echo "Queue IDs: $QUEUE_IDS"
-  echo "Meta Data: $META_DATA"
-done
+for QUEUE_ID in $CLUSTER_QUEUES
+do
+  curl -X POST \
+    -vvvv \
+    -H "Authorization: Bearer $BUILDKITE_API_ACCESS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "query": "mutation ($organization_id: ID!, $queue_id: ID!, $base_image: String!) { clusterQueueUpdate( input: { organizationId: $organization_id id: $queue_id baseImageRef: $base_image } ) { clusterQueue { id hostedAgentSettings { platformSettings { linux { baseImageRef } } } } } }",
+      "variables": { "organization_id": "'$ORGANIZATION_ID'", "queue_id": "'"$QUEUE_ID"'", "base_image": "'"$BASE_IMAGE"'" }
+    }' \
+    https://graphql.buildkite.com/v1
+done;
