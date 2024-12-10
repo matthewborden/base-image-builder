@@ -19,11 +19,10 @@ BASE_IMAGE=$(echo $QUERY_RESPONSE | jq -r '.data.build.jobs.edges[0].node.trigge
 for QUEUE_ID in $CLUSTER_QUEUES
 do
   curl -X POST \
-    -vvvv \
     -H "Authorization: Bearer $BUILDKITE_API_ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '{
-      "query": "mutation ($organization_id: ID!, $queue_id: ID!, $base_image: String!) { clusterQueueUpdate( input: { organizationId: $organization_id id: $queue_id baseImageRef: $base_image } ) { clusterQueue { id hostedAgentSettings { platformSettings { linux { baseImageRef } } } } } }",
+      "query": "mutation ($organization_id: ID!, $queue_id: ID!, $base_image: String!) { clusterQueueUpdate( input: { organizationId: $organization_id id: $queue_id hostedAgents: { agentImageRef: { $base_image } } } ) { clusterQueue { id hostedAgentSettings { platformSettings { linux { baseImageRef } } } } } }",
       "variables": { "organization_id": "'$ORGANIZATION_ID'", "queue_id": "'"$QUEUE_ID"'", "base_image": "'"$BASE_IMAGE"'" }
     }' \
     https://graphql.buildkite.com/v1
