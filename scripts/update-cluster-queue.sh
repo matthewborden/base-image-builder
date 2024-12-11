@@ -22,7 +22,7 @@ do
     -H "Authorization: Bearer $BUILDKITE_API_ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '{
-      "query": "mutation ($organization_id: ID!, $queue_id: ID!, $base_image: String!) { clusterQueueUpdate( input: { organizationId: $organization_id id: $queue_id hostedAgents: { agentImageRef: { $base_image } } } ) { clusterQueue { id hostedAgents { platformSettings { linux { agentImageRef } } } } } }",
+      "query": "mutation ($organization_id: ID!, $queue_id: ID!, $base_image: String!) { clusterQueueUpdate( input: { organizationId: $organization_id id: $queue_id hostedAgents: { agentImageRef: $base_image } } ) { clusterQueue { id hostedAgents { platformSettings { linux { agentImageRef } } } } } }",
       "variables": { "organization_id": "'$ORGANIZATION_ID'", "queue_id": "'"$QUEUE_ID"'", "base_image": "'"$BASE_IMAGE"'" }
     }' \
     https://graphql.buildkite.com/v1
